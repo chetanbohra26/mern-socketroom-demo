@@ -8,10 +8,8 @@ const router = express.Router();
 
 router.post("/login", async (req, res) => {
 	try {
-		console.log(req.body);
 		const { email, password } = req.body;
 		const user = await User.findOne({ email });
-		console.log(user);
 		if (!user)
 			return res.status(404).json({
 				success: false,
@@ -25,6 +23,7 @@ router.post("/login", async (req, res) => {
 			});
 
 		const payload = {
+			name: user.name,
 			email: user.email,
 			isVerified: user.isVerified,
 		};
@@ -43,7 +42,6 @@ router.post("/login", async (req, res) => {
 
 router.post("/register", async (req, res) => {
 	try {
-		console.log(req.body);
 		const { name, email, password } = req.body;
 
 		const hash = await hashPassword(password);
@@ -56,6 +54,7 @@ router.post("/register", async (req, res) => {
 		await user.save();
 
 		const payload = {
+			name: user.name,
 			email: user.email,
 			isVerified: user.isVerified,
 		};
