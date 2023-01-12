@@ -7,9 +7,8 @@ require("dotenv").config();
 const { initDb } = require("./db");
 initDb();
 
-const { authenticateSocket, handleSocketConnection } = require("./socket");
+const { authenticateSocket } = require("./socket");
 const apiRouter = require("./routes/router");
-const socketInit = require("./socket");
 
 const app = express();
 app.use(cors());
@@ -19,7 +18,35 @@ const io = require("socket.io")(server, {
 	cors: { origin: "*", methods: ["GET", "POST"] },
 });
 
-io.use(authenticateSocket).on("connection", handleSocketConnection);
+// const rooms = new Set();
+io.use(authenticateSocket).on("connection", (socket) => {
+	console.log("Connected to socket", socket.id);
+
+	socket.on("disconnect", function () {
+		console.log("user disconnected");
+	});
+
+	socket.on("join-request", (roomName) => {
+		console.log(socket.id, "joining", roomName);
+		socket.join(roomName);
+		//rooms.add(roomName);
+
+		/*
+		rooms.forEach((room) =>
+			io.to(room).emit("alert", `Socket ${socket.id} is in room ${room}`)
+		);
+		*/
+	});
+
+	socket.on("leave-request", (roomName) => {
+		console.log(socket.id, "leaving", roomName);
+		socket.leave(roomName);
+	});
+
+	socket.on("message-room", (payload) => {
+		console.log(payload);
+	});
+});
 
 app.use("/api/v1", apiRouter);
 
