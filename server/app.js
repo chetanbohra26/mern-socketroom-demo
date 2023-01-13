@@ -1,4 +1,5 @@
 const http = require("http");
+const path = require("path");
 const express = require("express");
 const cors = require("cors");
 
@@ -22,7 +23,7 @@ io.use(authenticateSocket).on("connection", (socket) => {
 	console.log("Connected to socket", socket.id);
 
 	socket.on("disconnect", function () {
-		console.log("user disconnected");
+		console.log("user disconnected", socket.id);
 	});
 
 	socket.on("join-request", (roomName) => {
@@ -36,7 +37,6 @@ io.use(authenticateSocket).on("connection", (socket) => {
 	});
 
 	socket.on("message-room", (payload) => {
-		console.log("payload", payload);
 		const { id, room, message } = payload;
 		const serverPayload = {
 			id,
@@ -49,8 +49,9 @@ io.use(authenticateSocket).on("connection", (socket) => {
 
 app.use("/api/v1", apiRouter);
 
-app.get("/", (req, res) => {
-	res.json({ success: true, message: "Welcome to express" });
+app.use(express.static(path.join(__dirname, "./../build")));
+app.get("*", (req, res) => {
+	res.sendFile(path.join(__dirname, "./../build", "index.html"));
 });
 
 const PORT = process.env.PORT || 7500;
