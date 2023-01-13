@@ -9,6 +9,11 @@ const router = express.Router();
 router.post("/login", async (req, res) => {
 	try {
 		const { email, password } = req.body;
+		if (!email || !password)
+			return res.status(400).json({
+				success: false,
+				message: "Kindly fill all the fields",
+			});
 		const user = await User.findOne({ email });
 		if (!user)
 			return res.status(404).json({
@@ -35,14 +40,19 @@ router.post("/login", async (req, res) => {
 			token,
 		});
 	} catch (err) {
-		console.log(err);
-		throw err;
+		console.log(err.message);
+		res.status(500).json({ success: false, message: err.message });
 	}
 });
 
 router.post("/register", async (req, res) => {
 	try {
 		const { name, email, password } = req.body;
+		if (!email || !password || !name)
+			return res.status(400).json({
+				success: false,
+				message: "Kindly fill all the fields",
+			});
 
 		const hash = await hashPassword(password);
 		if (!hash)
