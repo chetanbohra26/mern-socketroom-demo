@@ -5,6 +5,7 @@ import { io } from "socket.io-client";
 import { toast } from "react-toastify";
 
 import { getToken } from "../utils/token";
+import { v4 as uuid } from "uuid";
 
 const Home = () => {
 	const [isSocketSetup, setIsSocketSetup] = useState(false);
@@ -20,6 +21,7 @@ const Home = () => {
 	const [token] = useState(getToken());
 	const [socketInstance, setSocketInstance] = useState();
 	const chatRef = useRef();
+	const [me] = useState(uuid());
 
 	const handleSubmitRoom = (event) => {
 		event.preventDefault();
@@ -71,6 +73,8 @@ const Home = () => {
 			id: socketInstance.id,
 			room: currentRoom,
 			message: messageInput,
+			name: userState.name,
+			senderId: me,
 		};
 
 		socketInstance.emit("message-room", payload);
@@ -110,10 +114,13 @@ const Home = () => {
 		});
 
 		socket.on("response-room", (payload) => {
-			const { id, message, room } = payload;
+			const { id, message, room, name, senderId } = payload;
 
 			const updatedMessages = { ...roomMessageRef.current };
-			updatedMessages[room] = [...updatedMessages[room], message];
+			updatedMessages[room] = [
+				...updatedMessages[room],
+				{ id, message, name, senderId },
+			];
 
 			setRoomMessages(updatedMessages);
 
@@ -202,12 +209,23 @@ const Home = () => {
 									{roomMessages[currentRoom] &&
 									roomMessages[currentRoom].length > 0 ? (
 										roomMessages[currentRoom].map(
-											(message, index) => (
+											(item, index) => (
 												<div
-													key={index + message}
-													className="bg-red bg-dark text-light rounded p-2 mb-2 w-75"
+													key={index + item.message}
+													className={`w-75 d-flex flex-column mb-2 ${
+														item.senderId === me
+															? "ms-auto"
+															: ""
+													}`}
 												>
-													{message}
+													<span className="fs-7 text-secondary">
+														{item.name}
+													</span>
+													<div className="bg-dark text-white p-2 rounded">
+														<span>
+															{item.message}
+														</span>
+													</div>
 												</div>
 											)
 										)

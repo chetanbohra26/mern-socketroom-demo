@@ -37,11 +37,13 @@ io.use(authenticateSocket).on("connection", (socket) => {
 	});
 
 	socket.on("message-room", (payload) => {
-		const { id, room, message } = payload;
+		const { id, room, message, senderId, name } = payload;
 		const serverPayload = {
 			id,
 			message,
 			room,
+			senderId,
+			name,
 		};
 		io.to(room).emit("response-room", serverPayload);
 	});

@@ -196,13 +196,17 @@ function Login() {
 	};
 
 	return (
-		<div className="d-flex justify-content-center">
-			<div className="card w-50 mt-2">
-				<h4 className="card-header text-center">
-					{showLogin ? "Login" : "Register"}
-				</h4>
-				<div className="card-body">
-					{showLogin ? getLoginUI() : getRegisterUI()}
+		<div className="d-flex flex-column p-0 m-0 flex-fill justify-content-center">
+			<div className="row g-0">
+				<div className="col-xs-12 col-md-8 col-lg-6 mx-auto">
+					<div className="card shadow mx-2">
+						<h4 className="card-header text-center">
+							{showLogin ? "Login" : "Register"}
+						</h4>
+						<div className="card-body">
+							{showLogin ? getLoginUI() : getRegisterUI()}
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>

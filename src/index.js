@@ -16,6 +16,7 @@ import App from "./App";
 
 import Login from "./components/Login";
 import Home from "./components/Home";
+import Intro from "./components/Intro";
 
 const router = createBrowserRouter([
 	{
@@ -28,6 +29,7 @@ const router = createBrowserRouter([
 		children: [
 			{ path: "/login", element: <Login /> },
 			{ path: "/home", element: <Home /> },
+			{ path: "/", element: <Intro /> },
 		],
 	},
 	{
