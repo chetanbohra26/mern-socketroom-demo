@@ -1,20 +1,25 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
-//import { toast } from "react-toastify";
+import { toast } from "react-toastify";
 
 import { getToken } from "../utils/token";
 
 const Home = () => {
+	const [isSocketSetup, setIsSocketSetup] = useState(false);
 	const [roomInput, setRoomInput] = useState("");
 	const [rooms, setRooms] = useState([]);
-	const [message, setMessage] = useState("");
+	const [messageInput, setMessageInput] = useState("");
+	const [roomMessages, setRoomMessages] = useState({});
+	const roomMessageRef = useRef();
+	roomMessageRef.current = roomMessages;
 	const [currentRoom, setCurrentRoom] = useState("");
 	const userState = useSelector((state) => state.user);
 	const navigate = useNavigate();
 	const [token] = useState(getToken());
 	const [socketInstance, setSocketInstance] = useState();
+	const chatRef = useRef();
 
 	const handleSubmitRoom = (event) => {
 		event.preventDefault();
@@ -28,56 +33,96 @@ const Home = () => {
 		setRooms(newRooms);
 		setRoomInput("");
 		if (currentRoom === "") setCurrentRoom(roomValue);
+		const updatedMessages = { ...roomMessages };
+		updatedMessages[roomValue] = [];
+		setRoomMessages(updatedMessages);
 	};
 
 	const handleRoomDelete = (index) => {
+		const roomToDelete = rooms[index];
 		socketInstance.emit("leave-request", rooms[index]);
 
 		const newRooms = [...rooms];
 		newRooms.splice(index, 1);
 		setRooms(newRooms);
-		setCurrentRoom(newRooms.length === 0 ? "" : newRooms[0]);
+
+		if (currentRoom === roomToDelete) setCurrentRoom(newRooms[0] || "");
+		const updatedMessages = { ...roomMessages };
+		delete updatedMessages[roomToDelete];
+		setRoomMessages(updatedMessages);
 	};
 
 	const handleMessageInput = ({ target }) => {
-		setMessage(target.value);
+		setMessageInput(target.value);
+	};
+
+	const handleSwitchRoom = (value) => {
+		setCurrentRoom(value);
 	};
 
 	const handleSendMessage = (event) => {
 		event.preventDefault();
-		if (currentRoom === 0) return;
-		setMessage("");
+		if (currentRoom === "" || messageInput.trim() === "") return;
+
+		if (!socketInstance || !socketInstance.id)
+			return toast.error("Refresh the page");
+
+		const payload = {
+			id: socketInstance.id,
+			room: currentRoom,
+			message: messageInput,
+		};
+
+		socketInstance.emit("message-room", payload);
+		setMessageInput("");
 	};
 
 	useEffect(() => {
+		roomMessageRef.current = roomMessages;
+	}, [roomMessages]);
+
+	useEffect(() => {
 		return () => {
-			console.log("cleanup code");
-			socketInstance && socketInstance.disconnect();
+			if (!socketInstance) return;
+			socketInstance.disconnect();
 		};
 	}, [socketInstance]);
 
 	useEffect(() => {
+		if (isSocketSetup) return;
 		if (userState.name === "") {
 			return navigate("/login", { replace: true });
 		}
 
-		const socket = io("http://localhost:7500", {
-			query: { token: token },
-		});
+		const socket =
+			process.env.NODE_ENV === "development"
+				? io("http://localhost:7500", { query: { token } })
+				: io({ query: { token } });
 
 		socket.on("connect", () => {
-			//toast.success("Connected");
-			console.log(socket.id);
+			toast.success("Connected to server");
+			console.log("Your socket:", socket.id);
+			setIsSocketSetup(true);
 		});
 
 		socket.on("disconnect", () => {
-			//toast.error("Disconnected from server");
+			toast.error("Disconnected from server");
 		});
 
-		//socket.on("alert", (data) => console.log(`Alert: ${data}`));
+		socket.on("response-room", (payload) => {
+			const { id, message, room } = payload;
+
+			const updatedMessages = { ...roomMessageRef.current };
+			updatedMessages[room] = [...updatedMessages[room], message];
+
+			setRoomMessages(updatedMessages);
+
+			const chatBox = chatRef.current;
+			chatBox.scrollTop = chatBox.scrollHeight;
+		});
 
 		setSocketInstance(socket);
-	}, [navigate, userState.name, token]);
+	}, [isSocketSetup, navigate, userState.name, token, currentRoom]);
 
 	return (
 		<div className="container-xxl d-flex flex-column flex-fill p-2">
@@ -102,24 +147,32 @@ const Home = () => {
 				<div className="col-4 d-flex flex-column">
 					<div className="card d-flex flex-fill me-2 shadow">
 						<h4 className="card-header">Rooms</h4>
-						<div className="card-body p-1 pb-0">
+						<div
+							className="card-body p-1 pb-0 overflow-auto"
+							style={{ height: 0 }}
+						>
 							<div>
 								{rooms.length !== 0 ? (
 									rooms.map((item, index) => (
 										<div
-											className="p-1 m-1 rounded border border-1 d-flex align-items-center"
+											className="m-1 rounded border border-1 d-flex align-items-center pe-auto"
 											key={item}
+											onClick={() =>
+												handleSwitchRoom(item)
+											}
 										>
-											<h6 className="me-auto m-0">
+											<h6 className="p-2 m-0 flex-fill m-0 pe-auto">
 												{item}
 											</h6>
 											<button
-												className="btn btn-dark"
-												onClick={() =>
-													handleRoomDelete(index)
-												}
+												className="btn btn-dark p-1 m-1"
+												style={{ zIndex: 10 }}
+												onClick={(event) => {
+													event.stopPropagation();
+													handleRoomDelete(index);
+												}}
 											>
-												Delete
+												❌
 											</button>
 										</div>
 									))
@@ -136,11 +189,35 @@ const Home = () => {
 					<div className="card d-flex flex-fill ms-0 shadow">
 						<h4 className="card-header">
 							Messages
-							{currentRoom !== "" ? `(${currentRoom})` : ""}
+							{currentRoom !== "" ? ` (${currentRoom})` : ""}
 						</h4>
 						<div className="card-body p-2 d-flex flex-column flex-fill">
-							<div className="d-flex flex-column flex-fill">
-								messages sent are displayed here
+							<div
+								className="d-flex flex-column flex-fill overflow-auto pb-4 mb-2"
+								ref={chatRef}
+								style={{ height: 0 }}
+							>
+								{" "}
+								<>
+									{roomMessages[currentRoom] &&
+									roomMessages[currentRoom].length > 0 ? (
+										roomMessages[currentRoom].map(
+											(message, index) => (
+												<div
+													key={index + message}
+													className="bg-red bg-dark text-light rounded p-2 mb-2 w-75"
+												>
+													{message}
+												</div>
+											)
+										)
+									) : (
+										<h2 className="text-center mt-2">
+											No Messages here
+										</h2>
+									)}
+									<div className="pb-4"></div>
+								</>
 							</div>
 							<form onSubmit={handleSendMessage}>
 								<div className="d-flex">
@@ -148,7 +225,7 @@ const Home = () => {
 										type="text"
 										className="form-control me-2"
 										placeholder="Enter a message"
-										value={message}
+										value={messageInput}
 										onChange={handleMessageInput}
 									/>
 									<button

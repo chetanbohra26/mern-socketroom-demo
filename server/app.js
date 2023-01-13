@@ -18,7 +18,6 @@ const io = require("socket.io")(server, {
 	cors: { origin: "*", methods: ["GET", "POST"] },
 });
 
-// const rooms = new Set();
 io.use(authenticateSocket).on("connection", (socket) => {
 	console.log("Connected to socket", socket.id);
 
@@ -29,13 +28,6 @@ io.use(authenticateSocket).on("connection", (socket) => {
 	socket.on("join-request", (roomName) => {
 		console.log(socket.id, "joining", roomName);
 		socket.join(roomName);
-		//rooms.add(roomName);
-
-		/*
-		rooms.forEach((room) =>
-			io.to(room).emit("alert", `Socket ${socket.id} is in room ${room}`)
-		);
-		*/
 	});
 
 	socket.on("leave-request", (roomName) => {
@@ -44,7 +36,14 @@ io.use(authenticateSocket).on("connection", (socket) => {
 	});
 
 	socket.on("message-room", (payload) => {
-		console.log(payload);
+		console.log("payload", payload);
+		const { id, room, message } = payload;
+		const serverPayload = {
+			id,
+			message,
+			room,
+		};
+		io.to(room).emit("response-room", serverPayload);
 	});
 });
 

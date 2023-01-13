@@ -28,7 +28,8 @@
 	},
 	"scripts": {
 		"start": "node ./server/app",
-		"start-watch": "nodemon ./server/app",
+		"start-dev": "node --inspect ./server/app",
+		"start-watch": "nodemon --inspect ./server/app",
 		"serve": "react-scripts start",
 		"build": "react-scripts build",
 		"test": "react-scripts test",
