@@ -4,10 +4,12 @@ const commonConfig = {
 
 const prodConfig = {
 	apiURL: "/api",
+	localServerURL: "/",
 	...commonConfig,
 };
 const devConfig = {
 	apiURL: "http://localhost:7500/api",
+	localServerURL: "http://localhost:7500",
 	...commonConfig,
 };
 

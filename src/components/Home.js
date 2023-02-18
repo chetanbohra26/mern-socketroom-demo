@@ -5,6 +5,7 @@ import { io } from "socket.io-client";
 import { toast } from "react-toastify";
 
 import { getToken } from "../utils/token";
+import { config } from "../config";
 import { v4 as uuid } from "uuid";
 
 const Home = () => {
@@ -101,10 +102,7 @@ const Home = () => {
 			return navigate("/login", { replace: true });
 		}
 
-		const socket =
-			process.env.NODE_ENV === "development"
-				? io("http://localhost:7500", { query: { token } })
-				: io({ query: { token } });
+		const socket = io(config.localServerURL, { query: { token } });
 
 		socket.on("connect", () => {
 			toast.success("Connected to server");
