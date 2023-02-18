@@ -11,10 +11,10 @@ const Home = () => {
 	const [isSocketSetup, setIsSocketSetup] = useState(false);
 	const [roomInput, setRoomInput] = useState("");
 	const [rooms, setRooms] = useState([]);
+	const roomsRef = useRef(rooms);
 	const [messageInput, setMessageInput] = useState("");
 	const [roomMessages, setRoomMessages] = useState({});
-	const roomMessageRef = useRef();
-	roomMessageRef.current = roomMessages;
+	const roomMessageRef = useRef(roomMessages);
 	const [currentRoom, setCurrentRoom] = useState("");
 	const userState = useSelector((state) => state.user);
 	const navigate = useNavigate();
@@ -86,6 +86,10 @@ const Home = () => {
 	}, [roomMessages]);
 
 	useEffect(() => {
+		roomsRef.current = rooms;
+	}, [rooms]);
+
+	useEffect(() => {
 		return () => {
 			if (!socketInstance) return;
 			socketInstance.disconnect();
@@ -106,6 +110,11 @@ const Home = () => {
 		socket.on("connect", () => {
 			toast.success("Connected to server");
 			console.log("Your socket:", socket.id);
+			console.log(isSocketSetup);
+			console.log("request to rejoin", roomsRef.current);
+			if (roomsRef.current.length > 0) {
+				socket.emit("reconnect-room", roomsRef.current);
+			}
 			setIsSocketSetup(true);
 		});
 
@@ -129,7 +138,7 @@ const Home = () => {
 		});
 
 		setSocketInstance(socket);
-	}, [isSocketSetup, navigate, userState.name, token, currentRoom]);
+	}, [isSocketSetup, navigate, userState.name, token]);
 
 	return (
 		<div className="container-xxl d-flex flex-column flex-fill p-2">

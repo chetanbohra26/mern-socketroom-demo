@@ -31,6 +31,14 @@ io.use(authenticateSocket).on("connection", (socket) => {
 		socket.join(roomName);
 	});
 
+	socket.on("reconnect-room", (rooms) => {
+		if (!rooms || rooms.length === 0) return;
+		console.log(socket.id, "wants to rejoin", rooms);
+		rooms.forEach((roomName) => {
+			socket.join(roomName);
+		});
+	});
+
 	socket.on("leave-request", (roomName) => {
 		console.log(socket.id, "leaving", roomName);
 		socket.leave(roomName);
