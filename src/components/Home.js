@@ -177,7 +177,7 @@ const Home = () => {
 												handleSwitchRoom(item)
 											}
 										>
-											<h6 className="p-2 m-0 flex-fill m-0 pe-auto">
+											<h6 className="p-2 me-auto m-0 pe-auto text-truncate">
 												{item}
 											</h6>
 											<button
