@@ -8,7 +8,6 @@ import { getToken } from "../utils/token";
 import { v4 as uuid } from "uuid";
 
 const Home = () => {
-	const [isSocketSetup, setIsSocketSetup] = useState(false);
 	const [roomInput, setRoomInput] = useState("");
 	const [rooms, setRooms] = useState([]);
 	const roomsRef = useRef(rooms);
@@ -91,13 +90,13 @@ const Home = () => {
 
 	useEffect(() => {
 		return () => {
+			console.log("socketinstance", socketInstance);
 			if (!socketInstance) return;
 			socketInstance.disconnect();
 		};
 	}, [socketInstance]);
 
 	useEffect(() => {
-		if (isSocketSetup) return;
 		if (userState.name === "") {
 			return navigate("/login", { replace: true });
 		}
@@ -110,12 +109,10 @@ const Home = () => {
 		socket.on("connect", () => {
 			toast.success("Connected to server");
 			console.log("Your socket:", socket.id);
-			console.log(isSocketSetup);
-			console.log("request to rejoin", roomsRef.current);
 			if (roomsRef.current.length > 0) {
+				console.log("request to rejoin", roomsRef.current);
 				socket.emit("reconnect-room", roomsRef.current);
 			}
-			setIsSocketSetup(true);
 		});
 
 		socket.on("disconnect", () => {
@@ -138,7 +135,7 @@ const Home = () => {
 		});
 
 		setSocketInstance(socket);
-	}, [isSocketSetup, navigate, userState.name, token]);
+	}, [navigate, userState.name, token]);
 
 	return (
 		<div className="container-xxl d-flex flex-column flex-fill p-2">
@@ -227,10 +224,10 @@ const Home = () => {
 															: ""
 													}`}
 												>
-													<span className="fs-7 text-secondary">
-														{item.name}
-													</span>
 													<div className="bg-dark text-white p-2 rounded">
+														<h6 className="text-white">
+															{item.name}
+														</h6>
 														<span>
 															{item.message}
 														</span>
